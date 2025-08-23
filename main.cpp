@@ -4,7 +4,7 @@
 int main()
 {
     // Window size
-    const int windowWidth = 800;
+    const int windowWidth = 1000;
     const int windowHeight = 600;
     const int cellSize = 20;  // size of each grid cell
 
