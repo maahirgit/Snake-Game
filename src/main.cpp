@@ -1,50 +1,75 @@
 #include <SFML/Graphics.hpp>
-#include <vector>
+#include "Snake.h"
+#include "Wall.h"
+#include "Board.h"
+#include "Banner.h"
 
-int main()
-{
-    // Window size
-    const int windowWidth = 800;
-    const int windowHeight = 600;
-    const int cellSize = 20;  // size of each grid cell
+int main() {
+    const int cellSize = 30;      // Board + Snake size
+    const int miniCellSize = 15;  // Banner letter size
 
-    // Create window
-    sf::RenderWindow window(sf::VideoMode(windowWidth, windowHeight), "Snake Game Board");
+    sf::RenderWindow window(sf::VideoMode(900, 600), "Snake Game");
 
-    // Snake head position (start in center)
-    sf::RectangleShape snakeHead(sf::Vector2f(cellSize, cellSize));
-    snakeHead.setFillColor(sf::Color::Green);
-    int headX = windowWidth / 2 / cellSize;
-    int headY = windowHeight / 2 / cellSize;
-    snakeHead.setPosition(headX * cellSize, headY * cellSize);
+    Banner banner("SNAKE GAME", miniCellSize, window.getSize());
+    Snake snake(cellSize, window.getSize());
+    Wall walls(cellSize);
+    Board board(cellSize, window.getSize());
 
-    // Optional: grid lines
-    sf::VertexArray gridLines(sf::Lines);
-    for (int x = 0; x <= windowWidth; x += cellSize)
-    {
-        gridLines.append(sf::Vertex(sf::Vector2f(x, 0), sf::Color(50,50,50)));
-        gridLines.append(sf::Vertex(sf::Vector2f(x, windowHeight), sf::Color(50,50,50)));
-    }
-    for (int y = 0; y <= windowHeight; y += cellSize)
-    {
-        gridLines.append(sf::Vertex(sf::Vector2f(0, y), sf::Color(50,50,50)));
-        gridLines.append(sf::Vertex(sf::Vector2f(windowWidth, y), sf::Color(50,50,50)));
-    }
+    sf::Clock clock;
+    bool gameOver = false;
 
-    // Main loop
-    while (window.isOpen())
-    {
-        sf::Event event;
-        while (window.pollEvent(event))
-        {
-            if (event.type == sf::Event::Closed)
+    while (window.isOpen()) {
+        sf::Event e;
+        while (window.pollEvent(e)) {
+            if (e.type == sf::Event::Closed) 
                 window.close();
+
+            if (e.type == sf::Event::Resized) {
+                sf::FloatRect visibleArea(0, 0, e.size.width, e.size.height);
+                window.setView(sf::View(visibleArea));
+
+                walls.update(e.size.width, e.size.height);
+                board.updateGrid(e.size.width, e.size.height);
+                snake.setCenter({e.size.width, e.size.height});
+                banner.update(window.getSize());
+            }
         }
 
-        // Draw everything
-        window.clear(sf::Color::Black);
-        window.draw(gridLines);
-        window.draw(snakeHead);
+        float delta = clock.restart().asSeconds();
+
+        if (!gameOver) {
+            snake.updateColor(delta);
+
+            for (auto& w : walls.getWalls()) {
+                if (snake.getHead().getGlobalBounds().intersects(w.getGlobalBounds())) {
+                    gameOver = true;
+                    break;
+                }
+            }
+        }
+
+        window.clear();
+
+        // ✅ Draw navbar/banner
+        banner.draw(window);
+
+        // ✅ Shift game UI below banner
+        sf::View gameView(sf::FloatRect(
+            0, banner.getBannerHeight(),
+            window.getSize().x, 
+            window.getSize().y - banner.getBannerHeight()
+        ));
+        window.setView(gameView);
+
+        board.draw(window);
+        walls.draw(window);
+        snake.draw(window);
+
+        // ✅ Reset back to full view (for banner next frame)
+        window.setView(sf::View(sf::FloatRect(
+            0, 0, window.getSize().x, window.getSize().y
+        )));
+
         window.display();
     }
 
