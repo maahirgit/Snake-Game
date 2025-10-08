@@ -6,7 +6,8 @@ const int width = 20;
 const int height = 17;
 int x,y;  //head coordinates of snake
 
-enum eDirection { STOP = 0,LEFT,Right,UP, DOWN};
+enum eDirection { STOP = 0,LEFT,RIGHT,UP, DOWN};
+eDirection dir;
 
 void Setup(){
     gameOver = false;
