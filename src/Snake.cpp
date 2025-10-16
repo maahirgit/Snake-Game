@@ -3,16 +3,16 @@
 #include<bits/stdc++.h>
 using namespace std;
 
-struct SnakeSegment { int x, y; };
+// struct SnakeSegment { int x, y; };
 
-bool gameOver;
-const int width = 20;
-const int height = 17;
-vector<SnakeSegment> snake; // snake body
-int foodX, foodY;
-int score;
-enum eDirection { STOP = 0, LEFT, RIGHT, UP, DOWN };
-eDirection dir;
+// bool gameOver;
+// const int width = 20;
+// const int height = 17;
+// vector<SnakeSegment> snake; // snake body
+// int foodX, foodY;
+// int score;
+// enum eDirection { STOP = 0, LEFT, RIGHT, UP, DOWN };
+// eDirection dir;
 
 
 bool gameOver;
