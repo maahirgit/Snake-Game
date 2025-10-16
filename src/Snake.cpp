@@ -1,5 +1,19 @@
 #include<iostream>
+#include<conio.h>
+#include<bits/stdc++.h>
 using namespace std;
+
+// struct SnakeSegment { int x, y; };
+
+// bool gameOver;
+// const int width = 20;
+// const int height = 17;
+// vector<SnakeSegment> snake; // snake body
+// int foodX, foodY;
+// int score;
+// enum eDirection { STOP = 0, LEFT, RIGHT, UP, DOWN };
+// eDirection dir;
+
 
 bool gameOver;
 const int width = 20;
@@ -9,6 +23,32 @@ int x,y;  //head coordinates of snake
 enum eDirection { STOP = 0,LEFT,RIGHT,UP, DOWN};
 eDirection dir;
 
+void handleInput()
+{
+    if((_kbhit)){
+        switch (_getch())
+        {
+        case 'a':
+            dir = LEFT;
+            break;
+        
+        case 'd':
+            dir = RIGHT;
+            break;
+        
+        case 'w':
+            dir = UP;
+            break;
+        
+        case 's':
+            dir = DOWN;
+            break;
+        
+        case 'x':
+            exit(0);
+        }
+    }
+}
 void Setup(){
     gameOver = false;
     dir = STOP;
@@ -30,10 +70,37 @@ void Logic(){
 }
 
 int main(){
-    Setup();
-    while(!gameOver){
-        Logic();
-        cout << "Snake Position : (" << x << ", " << y << ")\n";
+    // Setup();
+    // while(!gameOver){
+    //     Logic();
+    //     cout << "Snake Position : (" << x << ", " << y << ")\n";
+    //     system("pause>nul");
+    // }
+    cout << "Press W/A/S/D to move, X to quit. \n";
+    while(true)
+    {
+        handleInput();
+        switch (dir)
+        {
+        case LEFT:
+            cout << "LEFT\n";
+            break;
+        
+        case RIGHT:
+            cout << "RIGHT\n";
+            break;
+        
+        case UP:
+            cout << "UP\n";
+            break;
+        
+        case DOWN:
+            cout << "DOWN\n";
+            break;
+        
+        default:
+            break;
+        }
         system("pause>nul");
     }
     return 0;
