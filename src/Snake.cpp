@@ -6,6 +6,25 @@
 using namespace std;
 
 
+enum Direction
+{
+    STOP = 0,
+    LEFT,
+    RIGHT,
+    UP,
+    DOWN
+};
+
+class GameBoard
+{
+public:
+    // PDF Requirement: NxN grid (internal cells)
+    int N;
+    GameBoard(int n = 20) : N(n) {}
+    int width() const { return N + 2; }  // include left/right borders
+    int height() const { return N + 2; } // include top/bottom borders
+};
+
 class Snake
 {
 public:
@@ -88,5 +107,31 @@ void move()
             if (body[i].first == head.first && body[i].second == head.second)
                 return true;
         return false;
+    }
+};
+
+class Food
+{
+public:
+    int x, y;
+
+    // PDF Requirement: "Unfair Food Placement: Ensure food does not spawn on the snake's body."
+    void spawn(int N, const deque<pair<int, int>> &snakeBody)
+    {
+        bool valid = false;
+        while (!valid)
+        {
+            x = rand() % N + 1; // 1..N
+            y = rand() % N + 1;
+            valid = true;
+            for (auto &s : snakeBody)
+            {
+                if (s.first == x && s.second == y)
+                {
+                    valid = false; // re-spawn if generated on snake
+                    break;
+                }
+            }
+        }
     }
 };
