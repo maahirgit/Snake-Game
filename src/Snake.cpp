@@ -140,6 +140,16 @@ public:
         }
         return false;
     }
+
+    bool checkCollisionWith(const Snake& other) const {
+        Position head = body.front();
+        for (const auto& segment : other.body) {
+            if (head == segment) {
+                return true;
+            }
+        }
+        return false;
+    }
     
     int getLength() const { return body.size(); }
 };
@@ -149,7 +159,7 @@ class GameBoard {
 private:
     // The number of snakes on the board is written down here and nowhere else.
     // Every other member and method derives it from snakes.size().
-    static const int SNAKE_COUNT = 1;
+    static const int SNAKE_COUNT = 2;
 
     int width, height;
     vector<int> scores;
@@ -157,6 +167,7 @@ private:
     vector<Snake*> snakes;
     Food* currentFood;
     bool gameOver;
+    int loser;
     int level;
     int foodEaten;
     bool useSpecialFood;
@@ -221,7 +232,7 @@ private:
     }
     
 public:
-    GameBoard(int w, int h) : width(w), height(h), gameOver(false),
+    GameBoard(int w, int h) : width(w), height(h), gameOver(false), loser(-1),
                                level(1), foodEaten(0), useSpecialFood(false),
                                firstDraw(true), oldFoodPos(-1, -1) {
         loadHighScore();
@@ -332,7 +343,7 @@ public:
         setCursorPosition(2, 0);
         for (size_t s = 0; s < scores.size(); s++) {
             setColor(15);
-            cout << "SCORE: ";
+            cout << "P" << (s + 1) << " SCORE: ";
             setColor(14);
             cout << scores[s] << "   ";
         }
@@ -382,10 +393,10 @@ public:
                 }
             } else {
                 switch (tolower(key)) {
-                    case 'w': snakes.front()->setDirection('U'); break;
-                    case 's': snakes.front()->setDirection('D'); break;
-                    case 'a': snakes.front()->setDirection('L'); break;
-                    case 'd': snakes.front()->setDirection('R'); break;
+                    case 'w': snakes[1]->setDirection('U'); break;
+                    case 's': snakes[1]->setDirection('D'); break;
+                    case 'a': snakes[1]->setDirection('L'); break;
+                    case 'd': snakes[1]->setDirection('R'); break;
                     case 'p': pause(); break;
                 }
             }
@@ -420,6 +431,11 @@ public:
         return false;
     }
     
+    void endGame(size_t loserIndex) {
+        gameOver = true;
+        loser = (int)loserIndex;
+    }
+
     void update() {
         if (!shouldMove()) {
             return;
@@ -434,7 +450,7 @@ public:
             Position head = snakes[s]->getHead();
             if (head.x <= 0 || head.x >= width - 1 ||
                 head.y <= 0 || head.y >= height - 1) {
-                gameOver = true;
+                endGame(s);
                 return;
             }
         }
@@ -442,8 +458,18 @@ public:
         // Check self collision
         for (size_t s = 0; s < snakes.size(); s++) {
             if (snakes[s]->checkSelfCollision()) {
-                gameOver = true;
+                endGame(s);
                 return;
+            }
+        }
+
+        // Check collision with another snake
+        for (size_t s = 0; s < snakes.size(); s++) {
+            for (size_t o = 0; o < snakes.size(); o++) {
+                if (o != s && snakes[s]->checkCollisionWith(*snakes[o])) {
+                    endGame(s);
+                    return;
+                }
             }
         }
 
@@ -501,6 +527,7 @@ public:
         cout << (char)187 << "\n";
         cout << "  " << (char)186 << "                                                  " << (char)186 << "\n";
         cout << "  " << (char)186 << "               GAME OVER!                         " << (char)186 << "\n";
+        cout << "  " << (char)186 << "               PLAYER " << (loser + 1) << " LOST!                     " << (char)186 << "\n";
         cout << "  " << (char)186 << "                                                  " << (char)186 << "\n";
         cout << "  " << (char)200;
         for(int i=0; i<50; i++) cout << (char)205;
@@ -516,20 +543,20 @@ public:
         
         for (size_t s = 0; s < scores.size(); s++) {
             setColor(15);
-            cout << "  " << (char)179 << "    Final Score: ";
+            cout << "  " << (char)179 << "    P" << (s + 1) << " Final Score: ";
             setColor(14);
             cout << scores[s];
-            for(int i = to_string(scores[s]).length(); i < 31; i++) cout << " ";
+            for(int i = to_string(scores[s]).length(); i < 28; i++) cout << " ";
             setColor(15);
             cout << (char)179 << "\n";
         }
 
         for (size_t s = 0; s < snakes.size(); s++) {
             setColor(15);
-            cout << "  " << (char)179 << "    Snake Length: ";
+            cout << "  " << (char)179 << "    P" << (s + 1) << " Snake Length: ";
             setColor(10);
             cout << snakes[s]->getLength();
-            for(int i = to_string(snakes[s]->getLength()).length(); i < 30; i++) cout << " ";
+            for(int i = to_string(snakes[s]->getLength()).length(); i < 27; i++) cout << " ";
             setColor(15);
             cout << (char)179 << "\n";
         }
