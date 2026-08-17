@@ -44,8 +44,9 @@ larger is faster.
 
 ## 3. Smell delta — [6]
 
-Reports: `lab2_3/audits/main.md` (21 findings at `main`) and `lab2_3/audits/lab1-head.md`
-(28 findings at the Lab-1 head).
+Reports: `lab2_3/audits/main.md` (21 findings at `main`, commit `3802598`) and
+`lab2_3/audits/lab1-head.md` (28 findings at the Lab-1 head, commit `462c804` on
+`feat/multiplayer` of the Lab-1 fork `BitecodesHub/Lab_1_Snake-Game`).
 
 | | count | representative site (`file:line`) |
 |---|---|---|
@@ -53,8 +54,8 @@ Reports: `lab2_3/audits/main.md` (21 findings at `main`) and `lab2_3/audits/lab1
 | Smells my Lab-1 PR **left untouched** | 20 | `src/Snake.cpp:165` — `GameBoard`, now 483 lines and 15 members |
 | Smells my Lab-1 PR **removed** | 1 | `src/Snake.cpp:496` at `main` — an unread `isNewHighScore` local, displaced rather than deleted on purpose |
 
-The Lab-1 branch is a reconstruction from the recorded Lab-1 change list; see the
-provenance note at the top of `lab2_3/audits/lab1-head.md`.
+The removed row is not zero, but it is not a win either: nothing was cleaned up on
+purpose. The dead local sat on a line the Lab-1 change had to rewrite for other reasons.
 
 ---
 
@@ -86,8 +87,8 @@ provenance note at the top of `lab2_3/audits/lab1-head.md`.
 | | Run 1 (Lab 1) | Run 2 (commit 4) |
 |---|---|---|
 | Smells introduced | 8 | 2 |
-| Lines changed, `git diff --shortstat -w` | +157 / −63 | +40 / −13 |
-| Lines changed, **raw** (no `-w`) | +177 / −83 | +40 / −13 |
+| Lines changed, `git diff --shortstat -w` | +157 / −68 | +40 / −13 |
+| Lines changed, **raw** (no `-w`) | +161 / −72 | +40 / −13 |
 | Functions reached | 13, plus class-scope fields | 7, plus class-scope fields |
 | Prompts to working code | 1 | 1 |
 | Wall-clock time | not recorded in Lab 1 | one session, not timed separately |
@@ -148,9 +149,7 @@ tick, captured as a golden file before the refactor and re-run after.
 
 ## If you did not finish
 
-Finished, with two things stated plainly rather than hidden. The Lab-1 branch audited in
-section 3 is a reconstruction from the recorded Lab-1 change list, because the original
-Lab-1 fork is not in this working copy; the provenance note in `audits/lab1-head.md` gives
-the evidence for how close it is. And the pull request has not been opened: this clone's
-remote is the upstream repository rather than a fork, so branch `lab2_3/design-first` is
-local until it is pushed to a fork and a PR is opened against that fork's `main`.
+Finished, with one thing stated plainly rather than hidden: the pull request has not been
+opened yet. This clone's `origin` is the upstream repository rather than a fork, so branch
+`lab2_3/design-first` is local until it is pushed to the fork
+`BitecodesHub/Lab_1_Snake-Game` and a PR is opened against that fork's `main`.
