@@ -161,10 +161,18 @@ tick, captured as a golden file before the refactor and re-run after.
 
 Finished. Parts A to F are complete and the checker exits 0.
 
-One thing about the submission route, stated plainly rather than hidden. The working clone
-was made from `maahirgit/Snake-Game` directly, so it had no fork to push to. `Lab2_Snake-Game`
-under this account was forked from `maahirgit/Snake-Game` for this lab, `lab2_3/design-first`
-was pushed there, and the pull request targets that fork's own `main` as Part F requires --
-not upstream, and not the Lab-1 pull request, which is untouched. The Lab-1 branch audited in
-section 3 lives on the group's Lab-1 fork `BitecodesHub/Lab_1_Snake-Game` and was fetched
-read-only.
+One thing about the submission route, stated plainly rather than hidden. Part F asks for the
+pull request to be opened against the fork's own `main`. This group submitted it against
+upstream `maahirgit/Snake-Game` instead, deliberately, because that is the route the Lab-1
+pull request took and the group wanted both labs reviewed in the same place. Both pull
+requests exist, so whichever the marker prefers is available:
+
+- `maahirgit/Snake-Game` PR #2 -- the submitted one, from `Afif-Momin:lab2_3/design-first`
+- `Afif-Momin/Lab2_Snake-Game` PR #1 -- the same branch against that fork's own `main`, the
+  route Part F describes
+
+The Lab-1 pull request, `maahirgit/Snake-Game` #1 from `BitecodesHub:feat/multiplayer`, was
+not touched: nothing was pushed to it and nothing was merged. The working clone was made
+from `maahirgit/Snake-Game` directly, so `Lab2_Snake-Game` under this account was forked
+from it for this lab and the branch pushed there. The Lab-1 branch audited in section 3
+lives on the group's Lab-1 fork `BitecodesHub/Lab_1_Snake-Game` and was fetched read-only.
