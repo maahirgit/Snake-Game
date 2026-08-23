@@ -51,7 +51,7 @@ Reports: `lab2_3/audits/main.md` (21 findings at `main`, commit `3802598`) and
 | | count | representative site (`file:line`) |
 |---|---|---|
 | Smells my Lab-1 PR **introduced** | 8 | `src/Snake.cpp:435` — every collision rule written twice, once per snake |
-| Smells my Lab-1 PR **left untouched** | 20 | `src/Snake.cpp:165` — `GameBoard`, now 483 lines and 15 members |
+| Smells my Lab-1 PR **left untouched** | 20 | `src/Snake.cpp:165` — `GameBoard`, now 479 lines and 15 members |
 | Smells my Lab-1 PR **removed** | 1 | `src/Snake.cpp:496` at `main` — an unread `isNewHighScore` local, displaced rather than deleted on purpose |
 
 The removed row is not zero, but it is not a win either: nothing was cleaned up on
@@ -95,6 +95,16 @@ purpose. The dead local sat on a line the Lab-1 change had to rewrite for other 
 
 Commit 3 (the refactor) on its own: **+103 / −45** `-w`, **+152 / −94** raw.
 
+Both prompt counts are 1, and both need a caveat rather than a footnote-free number.
+Run 1's single prompt is what the Lab-1 log records, and that log also records that
+the assignment document was fetched and parsed, so the assistant already had the four
+requirements before it read any code. Run 2's single prompt is one instruction covering
+Parts A to F of this handout, issued to an agent that read the repository itself; no
+later prompt in that session changed any code, and the four commits were reached without
+a correction round. Neither number measures difficulty. Both measure how much of the
+specification was handed over in one go, which is why the smells-introduced row is the
+one worth comparing across groups.
+
 Run 2's two introduced smells: a Temporary Field, `loser`, which is −1 for the whole game
 and read once (`src/Snake.cpp:170`, read at `src/Snake.cpp:530`); and a residual hard-coded
 player index in the key map, `snakes[1]` (`src/Snake.cpp:394`), which means a third player
@@ -113,7 +123,7 @@ Run 2's seven functions: `Snake::checkCollisionWith` (new), `GameBoard::GameBoar
 
 **Q1.** Commit 3 fixed **Shotgun Surgery**, M3 in `audits/main.md` (`src/Snake.cpp:147`).
 Before, "there is exactly one snake" was written nowhere and implied at 19 sites across
-9 methods; adding a snake meant finding all 19. Lab 1 found them and doubled them to 40.
+9 methods; adding a snake meant finding all 19. Lab 1 found them and raised them to 43.
 Now it is one integer, `SNAKE_COUNT` (`src/Snake.cpp:160`), and everything else reads
 `snakes.size()`. Adding a snake costs one edit plus a key map.
 
