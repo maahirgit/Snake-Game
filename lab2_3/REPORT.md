@@ -159,7 +159,12 @@ tick, captured as a golden file before the refactor and re-run after.
 
 ## If you did not finish
 
-Finished, with one thing stated plainly rather than hidden: the pull request has not been
-opened yet. This clone's `origin` is the upstream repository rather than a fork, so branch
-`lab2_3/design-first` is local until it is pushed to the fork
-`BitecodesHub/Lab_1_Snake-Game` and a PR is opened against that fork's `main`.
+Finished. Parts A to F are complete and the checker exits 0.
+
+One thing about the submission route, stated plainly rather than hidden. The working clone
+was made from `maahirgit/Snake-Game` directly, so it had no fork to push to. `Lab2_Snake-Game`
+under this account was forked from `maahirgit/Snake-Game` for this lab, `lab2_3/design-first`
+was pushed there, and the pull request targets that fork's own `main` as Part F requires --
+not upstream, and not the Lab-1 pull request, which is untouched. The Lab-1 branch audited in
+section 3 lives on the group's Lab-1 fork `BitecodesHub/Lab_1_Snake-Game` and was fetched
+read-only.
