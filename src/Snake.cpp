@@ -7,6 +7,7 @@
 #include <string>
 #include <fstream>
 #include <chrono>
+#include <vector>
 
 using namespace std;
 using namespace std::chrono;
@@ -35,19 +36,24 @@ protected:
 public:
     Food(char sym = 'O', int pts = 10) : symbol(sym), points(pts) {}
     
-    virtual void spawn(int width, int height, const deque<Position>& snake) {   // virtual allow child class to override it
+    // Takes every body on the board, however many there are, so that food placement
+    // does not depend on how many snakes exist.
+    virtual void spawn(int width, int height, const vector<const deque<Position>*>& bodies) {   // virtual allow child class to override it
         bool validPosition;
         do {
             validPosition = true;
             pos.x = rand() % (width - 2) + 1;   //means food should be inside border
             pos.y = rand() % (height - 2) + 1;
-            
-            for (const auto& segment : snake) {
-                if (pos == segment) {
-                    validPosition = false;
-                    break;
-                }
-            }  // check that snake body and food position are not same
+
+            for (const auto* body : bodies) {
+                for (const auto& segment : *body) {
+                    if (pos == segment) {
+                        validPosition = false;
+                        break;
+                    }
+                }  // check that snake body and food position are not same
+                if (!validPosition) break;
+            }
         } while (!validPosition);
     }
     
@@ -134,6 +140,16 @@ public:
         }
         return false;
     }
+
+    bool checkCollisionWith(const Snake& other) const {
+        Position head = body.front();
+        for (const auto& segment : other.body) {
+            if (head == segment) {
+                return true;
+            }
+        }
+        return false;
+    }
     
     int getLength() const { return body.size(); }
 };
@@ -141,20 +157,41 @@ public:
 
 class GameBoard {
 private:
+    // The number of snakes on the board is written down here and nowhere else.
+    // Every other member and method derives it from snakes.size().
+    static const int SNAKE_COUNT = 2;
+
     int width, height;
-    int score;
+    vector<int> scores;
     int highScore;
-    Snake* snake;
+    vector<Snake*> snakes;
     Food* currentFood;
     bool gameOver;
+    int loser;
     int level;
     int foodEaten;
     bool useSpecialFood;
-    Position oldTail;
+    vector<Position> oldTails;
     Position oldFoodPos;
     bool firstDraw;
     steady_clock::time_point lastMoveTime;
-    
+
+    vector<const deque<Position>*> snakeBodies() const {
+        vector<const deque<Position>*> bodies;
+        for (size_t s = 0; s < snakes.size(); s++) {
+            bodies.push_back(&snakes[s]->getBody());
+        }
+        return bodies;
+    }
+
+    int bestScore() const {
+        int best = 0;
+        for (size_t s = 0; s < scores.size(); s++) {
+            best = max(best, scores[s]);
+        }
+        return best;
+    }
+
     void loadHighScore() {
         ifstream file("highscore.txt");
         if (file.is_open()) {
@@ -166,8 +203,8 @@ private:
     }
     
     void saveHighScore() {
-        if (score > highScore) {
-            highScore = score;
+        if (bestScore() > highScore) {
+            highScore = bestScore();
             ofstream file("highscore.txt");
             if (file.is_open()) {
                 file << highScore;
@@ -195,19 +232,26 @@ private:
     }
     
 public:
-    GameBoard(int w, int h) : width(w), height(h), score(0), gameOver(false), 
-                               level(1), foodEaten(0), useSpecialFood(false), 
+    GameBoard(int w, int h) : width(w), height(h), gameOver(false), loser(-1),
+                               level(1), foodEaten(0), useSpecialFood(false),
                                firstDraw(true), oldFoodPos(-1, -1) {
         loadHighScore();
-        snake = new Snake(w / 2, h / 2);
+        for (int s = 0; s < SNAKE_COUNT; s++) {
+            snakes.push_back(new Snake(w * (s + 1) / (SNAKE_COUNT + 1), h / 2));
+            scores.push_back(0);
+        }
         currentFood = new Food();
-        currentFood->spawn(width, height, snake->getBody());
-        oldTail = snake->getTail();
+        currentFood->spawn(width, height, snakeBodies());
+        for (size_t s = 0; s < snakes.size(); s++) {
+            oldTails.push_back(snakes[s]->getTail());
+        }
         lastMoveTime = steady_clock::now();
     }
-    
+
     ~GameBoard() {
-        delete snake;
+        for (size_t s = 0; s < snakes.size(); s++) {
+            delete snakes[s];
+        }
         delete currentFood;
     }
     
@@ -246,10 +290,12 @@ public:
             
             drawBorder();
             
-            // Draw initial snake - all segments as circles
-            const deque<Position>& body = snake->getBody();
-            for (size_t i = 0; i < body.size(); i++) {
-                drawCell(body[i].x, body[i].y + 2, (char)254, 10); // Circle for all segments
+            // Draw initial snakes - all segments as circles
+            for (size_t s = 0; s < snakes.size(); s++) {
+                const deque<Position>& body = snakes[s]->getBody();
+                for (size_t i = 0; i < body.size(); i++) {
+                    drawCell(body[i].x, body[i].y + 2, (char)254, 10); // Circle for all segments
+                }
             }
             
             // Draw initial food
@@ -259,9 +305,11 @@ public:
             oldFoodPos = currentFood->getPosition();
             firstDraw = false;
         } else {
-            // Erase old tail (if snake didn't grow)
-            if (!(oldTail == snake->getTail())) {
-                drawCell(oldTail.x, oldTail.y + 2, ' ', 8);
+            // Erase old tails (for snakes that didn't grow)
+            for (size_t s = 0; s < snakes.size(); s++) {
+                if (!(oldTails[s] == snakes[s]->getTail())) {
+                    drawCell(oldTails[s].x, oldTails[s].y + 2, ' ', 8);
+                }
             }
             
             // Erase old food position if it changed
@@ -269,9 +317,11 @@ public:
                 drawCell(oldFoodPos.x, oldFoodPos.y + 2, ' ', 8);
             }
             
-            // Draw new head as circle
-            Position head = snake->getHead();
-            drawCell(head.x, head.y + 2, (char)254, 10);
+            // Draw new heads as circles
+            for (size_t s = 0; s < snakes.size(); s++) {
+                Position head = snakes[s]->getHead();
+                drawCell(head.x, head.y + 2, (char)254, 10);
+            }
             
             // Draw food
             drawCell(currentFood->getPosition().x, currentFood->getPosition().y + 2, 
@@ -283,17 +333,21 @@ public:
         // Update stats (only when they change)
         updateStats();
         drawTopStats();
-        
-        oldTail = snake->getTail();
+
+        for (size_t s = 0; s < snakes.size(); s++) {
+            oldTails[s] = snakes[s]->getTail();
+        }
     }
-    
+
     void drawTopStats() {
         setCursorPosition(2, 0);
-        setColor(15);
-        cout << "SCORE: ";
-        setColor(14);
-        cout << score << "   ";
-        
+        for (size_t s = 0; s < scores.size(); s++) {
+            setColor(15);
+            cout << "P" << (s + 1) << " SCORE: ";
+            setColor(14);
+            cout << scores[s] << "   ";
+        }
+
         setColor(15);
         cout << "| HIGH: ";
         setColor(14);
@@ -307,8 +361,10 @@ public:
         setColor(15);
         cout << "| LENGTH: ";
         setColor(10);
-        cout << snake->getLength() << "   ";
-        
+        for (size_t s = 0; s < snakes.size(); s++) {
+            cout << snakes[s]->getLength() << "   ";
+        }
+
         cout.flush();
     }
     
@@ -330,17 +386,17 @@ public:
             if (key == -32) { // Arrow keys
                 key = _getch();
                 switch (key) {
-                    case 72: snake->setDirection('U'); break; // Up
-                    case 80: snake->setDirection('D'); break; // Down
-                    case 75: snake->setDirection('L'); break; // Left
-                    case 77: snake->setDirection('R'); break; // Right
+                    case 72: snakes.front()->setDirection('U'); break; // Up
+                    case 80: snakes.front()->setDirection('D'); break; // Down
+                    case 75: snakes.front()->setDirection('L'); break; // Left
+                    case 77: snakes.front()->setDirection('R'); break; // Right
                 }
             } else {
                 switch (tolower(key)) {
-                    case 'w': snake->setDirection('U'); break;
-                    case 's': snake->setDirection('D'); break;
-                    case 'a': snake->setDirection('L'); break;
-                    case 'd': snake->setDirection('R'); break;
+                    case 'w': snakes[1]->setDirection('U'); break;
+                    case 's': snakes[1]->setDirection('D'); break;
+                    case 'a': snakes[1]->setDirection('L'); break;
+                    case 'd': snakes[1]->setDirection('R'); break;
                     case 'p': pause(); break;
                 }
             }
@@ -375,43 +431,67 @@ public:
         return false;
     }
     
+    void endGame(size_t loserIndex) {
+        gameOver = true;
+        loser = (int)loserIndex;
+    }
+
     void update() {
         if (!shouldMove()) {
             return;
         }
         
-        snake->move();
-        
+        for (size_t s = 0; s < snakes.size(); s++) {
+            snakes[s]->move();
+        }
+
         // Check wall collision
-        Position head = snake->getHead();
-        if (head.x <= 0 || head.x >= width - 1 || 
-            head.y <= 0 || head.y >= height - 1) {
-            gameOver = true;
-            return;
-        }
-        
-        // Check self collision
-        if (snake->checkSelfCollision()) {
-            gameOver = true;
-            return;
-        }
-        
-        // Check food collision
-        if (head == currentFood->getPosition()) {
-            snake->grow();
-            score += currentFood->getPoints();
-            foodEaten++;
-            
-            // Level up every 5 foods
-            if (foodEaten % 5 == 0) {
-                level++;
+        for (size_t s = 0; s < snakes.size(); s++) {
+            Position head = snakes[s]->getHead();
+            if (head.x <= 0 || head.x >= width - 1 ||
+                head.y <= 0 || head.y >= height - 1) {
+                endGame(s);
+                return;
             }
-            
-            // Spawn special food occasionally
-            delete currentFood;
-            useSpecialFood = (rand() % 5 == 0);
-            currentFood = useSpecialFood ? new SpecialFood() : new Food();
-            currentFood->spawn(width, height, snake->getBody());
+        }
+
+        // Check self collision
+        for (size_t s = 0; s < snakes.size(); s++) {
+            if (snakes[s]->checkSelfCollision()) {
+                endGame(s);
+                return;
+            }
+        }
+
+        // Check collision with another snake
+        for (size_t s = 0; s < snakes.size(); s++) {
+            for (size_t o = 0; o < snakes.size(); o++) {
+                if (o != s && snakes[s]->checkCollisionWith(*snakes[o])) {
+                    endGame(s);
+                    return;
+                }
+            }
+        }
+
+        // Check food collision
+        for (size_t s = 0; s < snakes.size(); s++) {
+            if (snakes[s]->getHead() == currentFood->getPosition()) {
+                snakes[s]->grow();
+                scores[s] += currentFood->getPoints();
+                foodEaten++;
+
+                // Level up every 5 foods
+                if (foodEaten % 5 == 0) {
+                    level++;
+                }
+
+                // Spawn special food occasionally
+                delete currentFood;
+                useSpecialFood = (rand() % 5 == 0);
+                currentFood = useSpecialFood ? new SpecialFood() : new Food();
+                currentFood->spawn(width, height, snakeBodies());
+                break;
+            }
         }
     }
     
@@ -425,7 +505,8 @@ public:
     
     int getSpeedForDirection() const {
         int baseSpeed = getSpeed();
-        char dir = snake->getDirection();
+        // The tick delay has only ever depended on one heading; keep it on the first snake.
+        char dir = snakes.front()->getDirection();
         // Vertical movement is slower (higher delay value)
         if (dir == 'U' || dir == 'D') {
             return baseSpeed + 30; // Add 30ms delay for vertical movement
@@ -446,6 +527,7 @@ public:
         cout << (char)187 << "\n";
         cout << "  " << (char)186 << "                                                  " << (char)186 << "\n";
         cout << "  " << (char)186 << "               GAME OVER!                         " << (char)186 << "\n";
+        cout << "  " << (char)186 << "               PLAYER " << (loser + 1) << " LOST!                     " << (char)186 << "\n";
         cout << "  " << (char)186 << "                                                  " << (char)186 << "\n";
         cout << "  " << (char)200;
         for(int i=0; i<50; i++) cout << (char)205;
@@ -459,21 +541,25 @@ public:
         cout << "  " << (char)179 << "  GAME STATISTICS:                               " << (char)179 << "\n";
         cout << "  " << (char)179 << "                                                  " << (char)179 << "\n";
         
-        setColor(15);
-        cout << "  " << (char)179 << "    Final Score: ";
-        setColor(14);
-        cout << score;
-        for(int i = to_string(score).length(); i < 31; i++) cout << " ";
-        setColor(15);
-        cout << (char)179 << "\n";
-        
-        setColor(15);
-        cout << "  " << (char)179 << "    Snake Length: ";
-        setColor(10);
-        cout << snake->getLength();
-        for(int i = to_string(snake->getLength()).length(); i < 30; i++) cout << " ";
-        setColor(15);
-        cout << (char)179 << "\n";
+        for (size_t s = 0; s < scores.size(); s++) {
+            setColor(15);
+            cout << "  " << (char)179 << "    P" << (s + 1) << " Final Score: ";
+            setColor(14);
+            cout << scores[s];
+            for(int i = to_string(scores[s]).length(); i < 28; i++) cout << " ";
+            setColor(15);
+            cout << (char)179 << "\n";
+        }
+
+        for (size_t s = 0; s < snakes.size(); s++) {
+            setColor(15);
+            cout << "  " << (char)179 << "    P" << (s + 1) << " Snake Length: ";
+            setColor(10);
+            cout << snakes[s]->getLength();
+            for(int i = to_string(snakes[s]->getLength()).length(); i < 27; i++) cout << " ";
+            setColor(15);
+            cout << (char)179 << "\n";
+        }
         
         setColor(15);
         cout << "  " << (char)179 << "    Level Reached: ";
@@ -493,8 +579,7 @@ public:
         
         cout << "  " << (char)179 << "                                                  " << (char)179 << "\n";
         
-        bool isNewHighScore = (score > highScore - score); // Check if this was a new high score
-        if (score == highScore && score > 0) {
+        if (bestScore() == highScore && bestScore() > 0) {
             setColor(13); // Magenta
             cout << "  " << (char)179 << "    " << (char)175 << " NEW HIGH SCORE! " << (char)174 << "                         " << (char)179 << "\n";
         } else {
@@ -547,7 +632,7 @@ public:
         }
     }
     
-    int getScore() const { return score; }
+    int getScore() const { return bestScore(); }
     int getLevel() const { return level; }
     int getFoodEaten() const { return foodEaten; }
 };
